@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Medical Record System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%);
+        }
+        
+        .medical-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .medical-card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border: 4px solid white;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            left: 24px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #3b82f6, #10b981);
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        
+        .prescription-badge {
+            background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%);
+        }
+        
+        .diagnosis-badge {
+            background: linear-gradient(135deg, #fef3c7 0%, #ffedd5 100%);
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800">
+    <!-- Main App Container -->
+    <div id="app" class="min-h-screen">
+        <!-- Login Screen (Initial View) -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+            <div class="medical-card w-full max-w-md p-8">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                        <i class="fas fa-stethoscope text-blue-600 text-2xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Digital Medical Records</h1>
+                    <p class="text-gray-600">Secure access to medical history</p>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Role Selection -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <button onclick="selectRole('patient')" class="p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 transition text-center">
+                            <i class="fas fa-user-injured text-2xl text-blue-500 mb-2"></i>
+                            <p class="font-medium">Patient</p>
+                        </button>
+                        <button onclick="selectRole('doctor')" class="p-4 border-2 border-gray-200 rounded-xl hover:border-green-400 transition text-center">
+                            <i class="fas fa-user-md text-2xl text-green-500 mb-2"></i>
+                            <p class="font-medium">Doctor</p>
+                        </button>
+                        <button onclick="selectRole('admin')" class="p-4 border-2 border-gray-200 rounded-xl hover:border-purple-400 transition text-center">
+                            <i class="fas fa-shield-alt text-2xl text-purple-500 mb-2"></i>
+                            <p class="font-medium">Admin</p>
+                        </button>
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="user@example.com">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="••••••••">
+                    </div>
+                    
+                    <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                        Sign In to Dashboard
+                    </button>
+                    
+                    <div class="text-center text-sm text-gray-600">
+                        <p>Demo Credentials: Use any email/password</p>
+                        <p class="mt-2">Role-specific features will be enabled</p>
+                    </div>
+                    
+                    <div class="flex items-center justify-center space-x-4 text-sm text-gray-600">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-blue-500 mr-1"></i>
+                            <span>HIPAA Compliant</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-green-500 mr-1"></i>
+                            <span>Secure Access</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard (Hidden Initially) -->
+        <div id="dashboard" class="min-h-screen hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <i class="fas fa-stethoscope text-blue-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900" id="dashboardTitle">Medical Dashboard</h1>
+                                <p class="text-sm text-gray-600" id="dashboardSubtitle">Your Health Records</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="p-2 bg-gray-100 rounded-full">
+                                    <i class="fas fa-user text-gray-600"></i>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium" id="userName">John Doe</p>
+                                    <p class="text-xs text-gray-500 capitalize" id="userRole">Patient</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="logout()" class="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="medical-card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Total Records</p>
+                                <p class="text-3xl font-bold text-gray-900" id="totalRecords">5</p>
+                            </div>
+                            <i class="fas fa-file-medical text-3xl text-blue-600 bg-blue-100 p-3 rounded-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="medical-card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Last Visit</p>
+                                <p class="text-3xl font-bold text-gray-900" id="lastVisit">Jun 15</p>
+                            </div>
+                            <i class="fas fa-calendar-check text-3xl text-emerald-600 bg-emerald-100 p-3 rounded-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="medical-card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Active Prescriptions</p>
+                                <p class="text-3xl font-bold text-gray-900" id="activePrescriptions">3</p>
+                            </div>
+                            <i class="fas fa-pills text-3xl text-purple-600 bg-purple-100 p-3 rounded-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-xl font-bold text-gray-900">Medical History Timeline</h2>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="showAddRecordModal()" id="addRecordBtn" class="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-lg hover:opacity-90 transition">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Add New Record</span>
+                        </button>
+                        <button onclick="uploadReport()" class="flex items-center space-x-2 px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Report</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timeline View -->
+                <div class="relative">
+                    <div class="timeline-line"></div>
+                    
+                    <div id="timelineContainer" class="space-y-8">
+                        <!-- Records will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <!-- No Records Message -->
+                <div id="noRecordsMessage" class="medical-card p-8 text-center hidden">
+                    <i class="fas fa-file-medical text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Medical Records Found</h3>
+                    <p class="text-gray-600">Your medical history will appear here after your first visit.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Record Modal -->
+    <div id="addRecordModal" class="fixed inset-0 modal-overlay flex items-center justify-center p-4 hidden z-50">
+        <div class="medical-card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Add Medical Record</h2>
+                    <p class="text-sm text-gray-600">Create a new medical record entry</p>
+                </div>
+                <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Patient ID</label>
+                        <input type="text" id="patientId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter patient ID">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Diagnosing Doctor</label>
+                        <div class="flex items-center space-x-3 px-4 py-3 bg-gray-50 rounded-lg">
+                            <i class="fas fa-user-md text-gray-600"></i>
+                            <span class="font-medium" id="modalDoctorName">Dr. Sharma</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
+                    <textarea id="diagnosis" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter diagnosis details..."></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Prescription</label>
+                    <textarea id="prescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter prescription details..."></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+                    <textarea id="notes" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Optional notes..."></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <button onclick="closeModal()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="saveRecord()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-lg hover:opacity-90 transition">
+                        Save Medical Record
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Report Modal -->
+    <div id="uploadModal" class="fixed inset-0 modal-overlay flex items-center justify-center p-4 hidden z-50">
+        <div class="medical-card w-full max-w-md">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Upload Medical Report</h2>
+                    <p class="text-sm text-gray-600">Upload PDF, JPG, or PNG files</p>
+                </div>
+                <button onclick="closeUploadModal()" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag & drop files or click to browse</p>
+                    <input type="file" id="fileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png">
+                    <label for="fileInput" class="inline-block px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 cursor-pointer transition">
+                        Browse Files
+                    </label>
+                    <p class="text-xs text-gray-500 mt-2">Supports PDF, JPG, PNG up to 10MB</p>
+                </div>
+                
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closeUploadModal()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmUpload()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-lg hover:opacity-90 transition">
+                        Upload File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample Medical Records Data
+        const sampleRecords = [
+            {
+                id: 1,
+                date: "2024-06-15",
+                time: "10:30 AM",
+                diagnosis: "PCOS – Early stage",
+                prescription: "Vitamin D, Lifestyle changes, Metformin 500mg daily",
+                doctor: "Dr. Sharma",
+                patient: "Sarah Johnson",
+                notes: "Follow up in 3 months. Recommended diet and exercise plan.",
+                attachments: ["blood_test.pdf"]
+            },
+            {
+                id: 2,
+                date: "2024-05-20",
+                time: "02:15 PM",
+                diagnosis: "Upper Respiratory Infection",
+                prescription: "Amoxicillin 500mg 3x/day for 7 days, Rest, Hydration",
+                doctor: "Dr. Patel",
+                patient: "Sarah Johnson",
+                notes: "Patient reported fever and cough. Chest X-ray clear.",
+                attachments: ["xray_report.jpg"]
+            },
+            {
+                id: 3,
+                date: "2024-04-10",
+                time: "09:45 AM",
+                diagnosis: "Annual Physical Exam",
+                prescription: "Continue current medications, Multivitamin daily",
+                doctor: "Dr. Sharma",
+                patient: "Sarah Johnson",
+                notes: "All vitals normal. Cholesterol levels improved.",
+                attachments: ["lab_results.pdf"]
+            },
+            {
+                id: 4,
+                date: "2024-02-28",
+                time: "11:00 AM",
+                diagnosis: "Migraine Headaches",
+                prescription: "Sumatriptan 50mg as needed, Stress management",
+                doctor: "Dr. Williams",
+                patient: "Sarah Johnson",
+                notes: "Prescribed medication for acute attacks. Recommended sleep schedule.",
+                attachments: []
+            },
+            {
+                id: 5,
+                date: "2023-12-15",
+                time: "03:30 PM",
+                diagnosis: "Seasonal Allergies",
+                prescription: "Loratadine 10mg daily, Nasal spray",
+                doctor: "Dr. Patel",
+                patient: "Sarah Johnson",
+                notes: "Allergy testing scheduled for next visit.",
+                attachments: ["allergy_test.pdf"]
+            }
+        ];
+
+        // Current user state
+        let currentUser = {
+            name: "Sarah Johnson",
+            role: "patient",
+            email: "sarah@example.com"
+        };
+
+        // Medical records for the current user
+        let medicalRecords = [...sampleRecords];
+
+        // DOM Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const dashboard = document.getElementById('dashboard');
+        const timelineContainer = document.getElementById('timelineContainer');
+        const noRecordsMessage = document.getElementById('noRecordsMessage');
+        const addRecordBtn = document.getElementById('addRecordBtn');
+        const dashboardTitle = document.getElementById('dashboardTitle');
+        const dashboardSubtitle = document.getElementById('dashboardSubtitle');
+        const userName = document.getElementById('userName');
+        const userRole = document.getElementById('userRole');
+        const totalRecords = document.getElementById('totalRecords');
+        const lastVisit = document.getElementById('lastVisit');
+        const activePrescriptions = document.getElementById('activePrescriptions');
+
+        // Role-specific dashboard titles
+        const roleTitles = {
+            patient: { title: "Medical Dashboard", subtitle: "Your Health Records" },
+            doctor: { title: "Doctor Dashboard", subtitle: "Patient Management" },
+            admin: { title: "Admin Dashboard", subtitle: "System Administration" }
+        };
+
+        // Initialize the app
+        function initApp() {
+            renderTimeline();
+            updateDashboardStats();
+        }
+
+        // Select role on login screen
+        function selectRole(role) {
+            currentUser.role = role;
+            
+            // Update UI to show selected role
+            document.querySelectorAll('[onclick^="selectRole"]').forEach(btn => {
+                btn.classList.remove('border-blue-400', 'border-green-400', 'border-purple-400');
+                btn.classList.add('border-gray-200');
+            });
+            
+            const selectedBtn = event.currentTarget;
+            if (role === 'patient') selectedBtn.classList.add('border-blue-400');
+            if (role === 'doctor') selectedBtn.classList.add('border-green-400');
+            if (role === 'admin') selectedBtn.classList.add('border-purple-400');
+            
+            // Show role confirmation
+            const roleNames = { patient: 'Patient', doctor: 'Doctor', admin: 'Administrator' };
+            alert(`Role set to: ${roleNames[role]}. Click "Sign In to Dashboard" to continue.`);
+        }
+
+        // Login function
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                alert("Please enter both email and password");
+                return;
+            }
+            
+            // Update user with entered email
+            currentUser.email = email;
+            if (email.includes('doctor')) currentUser.role = 'doctor';
+            if (email.includes('admin')) currentUser.role = 'admin';
+            
+            // Update dashboard based on role
+            const roleTitle = roleTitles[currentUser.role];
+            dashboardTitle.textContent = roleTitle.title;
+            dashboardSubtitle.textContent = roleTitle.subtitle;
+            userName.textContent = currentUser.name;
+            userRole.textContent = currentUser.role;
+            
+            // Show/hide add record button based on role
+            addRecordBtn.style.display = currentUser.role === 'patient' ? 'none' : 'flex';
+            
+            // Switch to dashboard view
+            loginScreen.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+            
+            initApp();
+        }
+
+        // Logout function
+        function logout() {
+            // Clear inputs
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            
+            // Reset to login screen
+            dashboard.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            
+            // Reset role selection
+            document.querySelectorAll('[onclick^="selectRole"]').forEach(btn => {
+                btn.classList.remove('border-blue-400', 'border-green-400', 'border-purple-400');
+                btn.classList.add('border-gray-200');
+            });
+        }
+
+        // Render medical timeline
+        function renderTimeline() {
+            timelineContainer.innerHTML = '';
+            
+            if (medicalRecords.length === 0) {
+                noRecordsMessage.classList.remove('hidden');
+                return;
+            }
+            
+            noRecordsMessage.classList.add('hidden');
+            
+            medicalRecords.forEach(record => {
+                const recordElement = document.createElement('div');
+                recordElement.className = 'relative flex';
+                
+                // Timeline dot
+                const dot = document.createElement('div');
+                dot.className = 'absolute left-6 mt-6 timeline-dot bg-blue-600 rounded-full';
+                
+                // Record card
+                const card = document.createElement('div');
+                card.className = 'ml-16 flex-1';
+                
+                const formattedDate = new Date(record.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                
+                card.innerHTML = `
+                    <div class="medical-card p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <i class="fas fa-clock text-gray-400"></i>
+                                    <span class="text-sm text-gray-600">${formattedDate} • ${record.time}</span>
+                                </div>
+                                
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                                    ${record.diagnosis}
+                                </h3>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                                    ${record.doctor}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                    <i class="fas fa-diagnosis text-blue-500 mr-2"></i>
+                                    Diagnosis Details
+                                </h4>
+                                <p class="text-gray-800 bg-gray-50 p-3 rounded-lg">
+                                    ${record.diagnosis}
+                                </p>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                    <i class="fas fa-pills text-green-500 mr-2"></i>
+                                    Prescription
+                                </h4>
+                                <p class="text-gray-800 bg-blue-50 p-3 rounded-lg">
+                                    ${record.prescription}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        ${record.notes ? `
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Additional Notes</h4>
+                            <p class="text-gray-600">${record.notes}</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${record.attachments && record.attachments.length > 0 ? `
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Attachments</h4>
+                            <div class="flex flex-wrap gap-3">
+                                ${record.attachments.map(file => `
+                                <a href="#" class="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <span class="text-sm">${file}</span>
+                                    <i class="fas fa-download text-gray-500"></i>
+                                </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="mt-6 flex items-center justify-between text-sm text-gray-500">
+                            <div class="flex items-center">
+                                <i class="fas fa-user mr-1"></i>
+                                <span>Patient: ${record.patient}</span>
+                            </div>
+                            <div class="text-right">
+                                Record ID: ${record.id}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                recordElement.appendChild(dot);
+                recordElement.appendChild(card);
+                timelineContainer.appendChild(recordElement);
+            });
+        }
+
+        // Update dashboard statistics
+        function updateDashboardStats() {
+            totalRecords.textContent = medicalRecords.length;
+            
+            if (medicalRecords.length > 0) {
+                const latestRecord = medicalRecords[0];
+                const date = new Date(latestRecord.date);
+                lastVisit.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            
+            // Count records with prescriptions
+            const prescriptionCount = medicalRecords.filter(r => r.prescription && r.prescription.length > 0).length;
+            activePrescriptions.textContent = prescriptionCount;
+        }
+
+        // Show add record modal
+        function showAddRecordModal() {
+            document.getElementById('modalDoctorName').textContent = 
+                currentUser.role === 'doctor' ? `Dr. ${currentUser.name.split(' ')[0]}` : 'Dr. Smith';
+            document.getElementById('addRecordModal').classList.remove('hidden');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('addRecordModal').classList.add('hidden');
+            // Clear form
+            document.getElementById('patientId').value = '';
+            document.getElementById('diagnosis').value = '';
+            document.getElementById('prescription').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        // Save new record
+        function saveRecord() {
+            const patientId = document.getElementById('patientId').value;
+            const diagnosis = document.getElementById('diagnosis').value;
+            const prescription = document.getElementById('prescription').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!patientId || !diagnosis || !prescription) {
+                alert("Please fill in all required fields");
+                return;
+            }
+            
+            // Create new record
+            const newRecord = {
+                id: medicalRecords.length + 1,
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                diagnosis,
+                prescription,
+                doctor: document.getElementById('modalDoctorName').textContent,
+                patient: currentUser.role === 'patient' ? currentUser.name : `Patient ${patientId}`,
+                notes,
+                attachments: []
+            };
+            
+            // Add to beginning of array
+            medicalRecords.unshift(newRecord);
+            
+            // Update UI
+            renderTimeline();
+            updateDashboardStats();
+            closeModal();
+            
+            // Show success message
+            alert('Medical record added successfully!');
+        }
+
+        // Show upload modal
+        function uploadReport() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+        }
+
+        // Close upload modal
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+        }
+
+        // Confirm upload
+        function confirmUpload() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                alert("Please select a file to upload");
+                return;
+            }
+            
+            const fileName = fileInput.files[0].name;
+            alert(`File "${fileName}" uploaded successfully!`);
+            closeUploadModal();
+        }
+
+        // Initialize file input
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                document.querySelector('#uploadModal .text-gray-600').textContent = `Selected: ${fileName}`;
+            }
+        });
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add some sample records to start with
+            renderTimeline();
+        });
+    </script>
+</body>
+</html>
